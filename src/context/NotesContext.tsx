@@ -54,9 +54,9 @@ export function NotesProvider({ children }: NotesProviderProps) {
       category: payload.category,
     };
 
-    notes.push(newNote);
-    setNotes(notes);
-    saveNotes(notes);
+    const updatedNotes = [...notes, newNote];
+    setNotes(updatedNotes);
+    saveNotes(updatedNotes);
   };
 
   const deleteNote = (id: string) => {
