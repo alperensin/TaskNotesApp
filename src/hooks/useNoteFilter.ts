@@ -31,16 +31,16 @@ export function useNoteFilter(notes: Note[]): UseNoteFilterReturn {
   useEffect(() => {
     let result = [...notes];
 
-    if (filterConfig.category !== 'all') {
-      result = result.filter(note => note.category === filterConfig.category);
+    if (category !== 'all') {
+      result = result.filter(note => note.category === category);
     }
 
-    if (filterConfig.onlyFavorites) {
+    if (onlyFavorites) {
       result = result.filter(note => note.isFavorite);
     }
 
-    if (filterConfig.searchQuery.trim()) {
-      const query = filterConfig.searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
       result = result.filter(
         note =>
           note.title.toLowerCase().includes(query) ||
@@ -49,7 +49,7 @@ export function useNoteFilter(notes: Note[]): UseNoteFilterReturn {
     }
 
     setFilteredNotes(result);
-  }, [notes, filterConfig]);
+  }, [notes, category, onlyFavorites, searchQuery]);
 
   return {
     filteredNotes,
