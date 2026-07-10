@@ -21,9 +21,14 @@ export function useDeviceInfo(): UseDeviceInfoReturn {
   }, []);
 
   const loadDeviceInfo = async () => {
-    const info = await getDeviceInfo();
-    setDeviceInfo(info);
-    setIsLoading(false);
+    try {
+      const info = await getDeviceInfo();
+      setDeviceInfo(info);
+    } catch {
+      setDeviceInfo(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return {

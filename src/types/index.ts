@@ -1,5 +1,5 @@
 export interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
   createdAt: string;
@@ -16,9 +16,15 @@ export interface CreateNotePayload {
   category: NoteCategory;
 }
 
+export interface UpdateNotePayload {
+  title: string;
+  content: string;
+}
+
 export interface NotesContextType {
   notes: Note[];
   addNote: (payload: CreateNotePayload) => void;
+  updateNote: (id: string, payload: UpdateNotePayload) => void;
   deleteNote: (id: string) => void;
   toggleFavorite: (id: string) => void;
   getNoteById: (id: string) => Note | undefined;

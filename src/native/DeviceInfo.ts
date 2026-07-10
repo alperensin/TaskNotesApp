@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-const { DeviceInfoModule } = NativeModules;
+const { DeviceInfoBridge } = NativeModules;
 
 export interface DeviceInfo {
   deviceName: string;
@@ -11,11 +11,11 @@ export interface DeviceInfo {
 }
 
 export async function getDeviceInfo(): Promise<DeviceInfo> {
-  return DeviceInfoModule.getDeviceInfo();
+  return DeviceInfoBridge.getDeviceInfo();
 }
 
 export async function getSystemVersion(): Promise<string> {
-  return DeviceInfoModule.getSystemVersion();
+  return DeviceInfoBridge.getSystemVersion();
 }
 
 export function getDevicePlatform(): string {

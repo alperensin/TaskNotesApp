@@ -13,7 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 
 interface NoteCardProps {
   note: Note;
-  onPress: (id: number) => void;
+  onPress: (id: string) => void;
   onFavoritePress: (id: string) => void;
 }
 
@@ -39,7 +39,7 @@ export function NoteCard({ note, onPress, onFavoritePress }: NoteCardProps) {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => onFavoritePress(note.id as unknown as string)}>
+          onPress={() => onFavoritePress(note.id)}>
           <Text style={styles.favoriteIcon}>
             {note.isFavorite ? '⭐' : '☆'}
           </Text>

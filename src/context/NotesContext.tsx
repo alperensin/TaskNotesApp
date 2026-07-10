@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 
-import { Note, NotesContextType, CreateNotePayload } from '../types';
+import { Note, NotesContextType, CreateNotePayload, UpdateNotePayload } from '../types';
 import { loadNotes, saveNotes } from '../services/storage';
 import { generateId } from '../utils/formatters';
 import { useTheme } from './ThemeContext';
@@ -54,9 +54,25 @@ export function NotesProvider({ children }: NotesProviderProps) {
       category: payload.category,
     };
 
-    notes.push(newNote);
-    setNotes(notes);
-    saveNotes(notes);
+    const updatedNotes = [...notes, newNote];
+    setNotes(updatedNotes);
+    saveNotes(updatedNotes);
+  };
+
+  const updateNote = (id: string, payload: UpdateNotePayload) => {
+    const updatedNotes = notes.map(note =>
+      note.id === id
+        ? {
+            ...note,
+            title: payload.title,
+            content: payload.content,
+            updatedAt: new Date().toISOString(),
+          }
+        : note,
+    );
+
+    setNotes(updatedNotes);
+    saveNotes(updatedNotes);
   };
 
   const deleteNote = (id: string) => {
@@ -82,6 +98,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
   const value: NotesContextType = {
     notes,
     addNote,
+    updateNote,
     deleteNote,
     toggleFavorite,
     getNoteById,

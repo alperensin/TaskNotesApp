@@ -56,7 +56,7 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header title="Minhas Notas" />
+      <Header title="Minhas Notas" onSettingsPress={() => {}} />
 
       {deviceInfo && (
         <View style={styles.deviceBanner}>
