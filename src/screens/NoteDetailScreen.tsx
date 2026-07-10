@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../types';
-import { Header, Button } from '../components';
+import { Header, Button, EmptyState } from '../components';
 
 import {
   formatDate,
@@ -23,6 +23,27 @@ export function NoteDetailScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
 
   const note = getNoteById(noteId);
+
+  if (!note) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header
+          title="Detalhes"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+          onSettingsPress={() => {}}
+        />
+        <EmptyState
+          title="Nota não encontrada"
+          description="Esta nota pode ter sido excluída ou não existe mais."
+          icon="🔍"
+        />
+        <View style={styles.notFoundAction}>
+          <Button title="Voltar" onPress={() => navigation.goBack()} />
+        </View>
+      </View>
+    );
+  }
 
   const handleDelete = () => {
     Alert.alert('Excluir nota', 'Tem certeza que deseja excluir esta nota?', [
@@ -136,5 +157,9 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 8,
+  },
+  notFoundAction: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
 });
