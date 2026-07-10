@@ -17,7 +17,7 @@ export function AppNavigator() {
         initialRouteName="Home"
         screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name={'Details' as any} component={NoteDetailScreen} />
+        <Stack.Screen name="NoteDetail" component={NoteDetailScreen} />
         <Stack.Screen name="CreateNote" component={CreateNoteScreen} />
       </Stack.Navigator>
     </NavigationContainer>
