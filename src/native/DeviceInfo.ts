@@ -10,9 +10,17 @@ export interface DeviceInfo {
   platform: string;
 }
 
-export async function getDeviceInfo(): Promise<DeviceInfo> {
-  return DeviceInfoModule.getDeviceInfo();
-}
+export const getDeviceInfo = async () => {
+  if (Platform.OS === 'web') {
+    return {
+      uniqueId: 'web-browser',
+      brand: 'Browser',
+      model: navigator.userAgent,
+    };
+  }
+
+  return await DeviceInfoModule.getDeviceInfo();
+};
 
 export async function getSystemVersion(): Promise<string> {
   return DeviceInfoModule.getSystemVersion();

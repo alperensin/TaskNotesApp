@@ -17,14 +17,27 @@ export function useDeviceInfo(): UseDeviceInfoReturn {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadDeviceInfo();
-  }, []);
+    let isMounted = true;
 
-  const loadDeviceInfo = async () => {
-    const info = await getDeviceInfo();
-    setDeviceInfo(info);
-    setIsLoading(false);
-  };
+    const loadDeviceInfo = async () => {
+      try {
+        const info = await getDeviceInfo();
+        if (isMounted) {
+          setDeviceInfo(info);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar info do dispositivo:", error);
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadDeviceInfo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return {
     deviceInfo,

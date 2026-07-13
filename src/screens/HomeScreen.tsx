@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -6,37 +6,47 @@ import {
   ActivityIndicator,
   TextInput,
   Text,
+  Pressable,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { RootStackParamList } from '../types';
-import {
-  Header,
-  NoteCard,
-  Button,
-  EmptyState,
-  CategoryFilter,
-} from '../components';
+import { RootStackParamList, NoteCategory } from '../types';
+import { Header, CategoryFilter } from '../components';
 
 import { useNotes } from '../context/NotesContext';
 import { useTheme } from '../context/ThemeContext';
-
-import { useNoteFilter } from '../hooks/useNoteFilter';
-import { useDeviceInfo } from '../hooks/useDeviceInfo';
+import { useNoteSort, SortMode } from '../hooks/useNoteSort';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export function HomeScreen({ navigation }: Props) {
-  const { notes, toggleFavorite, isLoading } = useNotes();
+  const { notes, isLoading } = useNotes();
   const { colors } = useTheme();
-  const { filteredNotes, filterConfig, setCategory, setSearchQuery } =
-    useNoteFilter(notes);
 
-  const { deviceInfo } = useDeviceInfo();
+  const [category, setCategory] = useState<NoteCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleNotePress = (id: string) => {
-    navigation.navigate('NoteDetail', { noteId: id });
-  };
+  const filteredNotes = useMemo(() => {
+    if (!notes || notes.length === 0) return [];
+    let result = [...notes];
+
+    if (category && category !== 'all') {
+      result = result.filter(note => note.category === category);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        note =>
+          (note.title && note.title.toLowerCase().includes(query)) ||
+          (note.content && note.content.toLowerCase().includes(query))
+      );
+    }
+
+    return result;
+  }, [notes, category, searchQuery]);
+
+  const { sortedNotes, sortMode, setSortMode } = useNoteSort(filteredNotes);
 
   const handleCreateNote = () => {
     navigation.navigate('CreateNote');
@@ -44,29 +54,35 @@ export function HomeScreen({ navigation }: Props) {
 
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.loadingContainer,
-          { backgroundColor: colors.background },
-        ]}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
+  const renderSortButton = (mode: SortMode, label: string) => {
+    const isActive = sortMode === mode;
+    return (
+      <Pressable
+        onPress={() => setSortMode(mode)}
+        style={({ hovered }) => [
+          styles.sortButton,
+          isActive && { backgroundColor: colors.primary + '20' },
+          hovered && { backgroundColor: '#2196F3' + '30', borderColor: '#2196F3' }
+        ]}
+      >
+        <Text style={[styles.sortButtonText, { color: isActive ? colors.primary : colors.textSecondary }]}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header title="Minhas Notas" />
 
-      {deviceInfo && (
-        <View style={styles.deviceBanner}>
-          <Text style={[styles.deviceText, { color: colors.textSecondary }]}>
-            📱 {deviceInfo.deviceName} • {deviceInfo.systemVersion}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.searchContainer}>
+      <View style={styles.topActionContainer}>
         <TextInput
           style={[
             styles.searchInput,
@@ -78,78 +94,113 @@ export function HomeScreen({ navigation }: Props) {
           ]}
           placeholder="Buscar notas..."
           placeholderTextColor={colors.textSecondary}
-          value={filterConfig.searchQuery}
+          value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        
+        <Pressable
+          style={({ hovered }) => [
+            styles.inlineButton,
+            { 
+              backgroundColor: colors.primary + '20', 
+              borderColor: colors.primary,
+            },
+            hovered && { backgroundColor: '#2196F3' + '30', borderColor: '#2196F3' }
+          ]}
+          onPress={handleCreateNote}
+        >
+          <Text style={[styles.inlineButtonText, { color: colors.primary }]}>
+            + Adicionar nota
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.sortContainer}>
+        {renderSortButton(SortMode.NEWEST, 'Recentes')}
+        {renderSortButton(SortMode.OLDEST, 'Antigas')}
+        {renderSortButton(SortMode.TITLE_AZ, 'A-Z')}
       </View>
 
       <CategoryFilter
-        selectedCategory={filterConfig.category}
+        selectedCategory={category}
         onSelectCategory={setCategory}
       />
 
-      {filteredNotes.length === 0 ? (
-        <EmptyState
-          title="Nenhuma nota encontrada"
-          description="Crie sua primeira nota tocando no botão abaixo."
-        />
-      ) : (
+      <View style={styles.listWrapper}>
         <FlatList
-          data={filteredNotes}
-          renderItem={({ item }) => (
-            <NoteCard
-              note={item}
-              onPress={handleNotePress}
-              onFavoritePress={toggleFavorite}
-            />
-          )}
+          data={sortedNotes}
+          keyExtractor={(item) => item.id}
+          style={styles.list}
           contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <View style={[styles.diagnosticCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.diagnosticTitle, { color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.diagnosticContent, { color: colors.textSecondary }]}>{item.content}</Text>
+              <Text style={styles.diagnosticMeta}>Categoria: {item.category}</Text>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.diagnosticEmpty}>
+              <Text style={[styles.diagnosticTitle, { color: colors.text }]}>Nenhuma nota encontrada</Text>
+            </View>
+          }
           showsVerticalScrollIndicator={false}
         />
-      )}
-
-      <View style={styles.fabContainer}>
-        <Button title="+ Nova Nota" onPress={handleCreateNote} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchContainer: {
+  container: { flex: 1, width: '100%', height: '100%' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  topActionContainer: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 8,
+    gap: 8,
   },
   searchInput: {
+    flex: 1,
     height: 44,
     borderRadius: 22,
     paddingHorizontal: 16,
     fontSize: 15,
     borderWidth: 1,
   },
-  listContent: {
-    paddingBottom: 100,
-  },
-  deviceBanner: {
+  inlineButton: {
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  deviceText: {
-    fontSize: 11,
+  inlineButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
-  fabContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
+  sortContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 4,
   },
+  sortButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  sortButtonText: { fontSize: 13, fontWeight: '600' },
+  listWrapper: { flex: 1, width: '100%', minHeight: 'auto' },
+  list: { flex: 1, width: '100%' },
+  listContent: { paddingHorizontal: 16, paddingBottom: 16, flexGrow: 1 },
+  diagnosticCard: { padding: 16, borderRadius: 8, marginBottom: 12, borderWidth: 1 },
+  diagnosticTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  diagnosticContent: { fontSize: 14, marginBottom: 8, lineHeight: 18 },
+  diagnosticMeta: { fontSize: 11, color: '#888' },
+  diagnosticEmpty: { paddingTop: 32, alignItems: 'center' },
 });
