@@ -14,6 +14,7 @@ export interface CreateNotePayload {
   title: string;
   content: string;
   category: NoteCategory;
+  createdAt?: string;
 }
 
 export interface NotesContextType {
@@ -45,6 +46,6 @@ export interface ThemeColors {
 
 export type RootStackParamList = {
   Home: undefined;
-  NoteDetail: { noteId: string };
+  Details: { noteId: string };
   CreateNote: undefined;
 };

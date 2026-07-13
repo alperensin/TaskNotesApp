@@ -6,11 +6,11 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 
 function App(): React.JSX.Element {
   return (
-    <NotesProvider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <NotesProvider>
         <AppNavigator />
-      </ThemeProvider>
-    </NotesProvider>
+      </NotesProvider>
+    </ThemeProvider>
   );
 }
 

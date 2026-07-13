@@ -3,15 +3,20 @@ import React, {
   useState,
   useEffect,
   useContext,
+  useMemo,
+  useCallback,
   ReactNode,
 } from 'react';
 
 import { Note, NotesContextType, CreateNotePayload } from '../types';
-import { loadNotes, saveNotes } from '../services/storage';
+import { loadNotes, saveNotes as saveNotesToStorage } from '../services/storage';
 import { generateId } from '../utils/formatters';
-import { useTheme } from './ThemeContext';
 
-const NotesContext = createContext<NotesContextType | undefined>(undefined);
+interface ExtendedNotesContextType extends Omit<NotesContextType, 'updateNote'> {
+  updateNote: (id: string, payload: Partial<CreateNotePayload>) => void;
+}
+
+const NotesContext = createContext<ExtendedNotesContextType | undefined>(undefined);
 
 interface NotesProviderProps {
   children: ReactNode;
@@ -21,29 +26,30 @@ export function NotesProvider({ children }: NotesProviderProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { isDarkMode } = useTheme();
-
   useEffect(() => {
-    console.log('Theme changed:', isDarkMode ? 'Dark Mode' : 'Light Mode');
+    const loadInitialNotes = async () => {
+      try {
+        setIsLoading(true);
+        const savedNotes = await loadNotes();
+
+        if (!savedNotes || savedNotes.length === 0) {
+          const defaultNotes = getDefaultNotes();
+          setNotes(defaultNotes);
+          await saveNotesToStorage(defaultNotes);
+        } else {
+          setNotes(savedNotes);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar as notas:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     loadInitialNotes();
-  }, [isDarkMode]);
+  }, []);
 
-  const loadInitialNotes = async () => {
-    setIsLoading(true);
-
-    const savedNotes = await loadNotes();
-
-    if (savedNotes.length === 0) {
-      setNotes(getDefaultNotes());
-    } else {
-      setNotes(savedNotes);
-    }
-
-    setIsLoading(false);
-  };
-
-  const addNote = (payload: CreateNotePayload) => {
+  const addNote = useCallback((payload: CreateNotePayload) => {
     const newNote: Note = {
       id: generateId(),
       title: payload.title,
@@ -54,52 +60,71 @@ export function NotesProvider({ children }: NotesProviderProps) {
       category: payload.category,
     };
 
-    notes.push(newNote);
-    setNotes(notes);
-    saveNotes(notes);
-  };
+    setNotes(prevNotes => {
+      const updated = [newNote, ...prevNotes];
+      saveNotesToStorage(updated);
+      return updated;
+    });
+  }, []);
 
-  const deleteNote = (id: string) => {
-    const updatedNotes = notes.filter(note => note.id !== id);
+  const updateNote = useCallback((id: string, payload: Partial<CreateNotePayload>) => {
+    setNotes(prevNotes => {
+      const updated = prevNotes.map(note =>
+        note.id === id
+          ? {
+              ...note,
+              ...payload,
+              updatedAt: new Date().toISOString(),
+            }
+          : note
+      );
+      saveNotesToStorage(updated);
+      return updated;
+    });
+  }, []);
 
-    setNotes(updatedNotes);
-    saveNotes(updatedNotes);
-  };
+  const deleteNote = useCallback((id: string) => {
+    setNotes(prevNotes => {
+      const updated = prevNotes.filter(note => note.id !== id);
+      saveNotesToStorage(updated);
+      return updated;
+    });
+  }, []);
 
-  const toggleFavorite = (id: string) => {
-    const updatedNotes = notes.map(note =>
-      note.id === id ? { ...note, isFavorite: !note.isFavorite } : note,
-    );
+  const toggleFavorite = useCallback((id: string) => {
+    setNotes(prevNotes => {
+      const updated = prevNotes.map(note =>
+        note.id === id ? { ...note, isFavorite: !note.isFavorite } : note,
+      );
+      saveNotesToStorage(updated);
+      return updated;
+    });
+  }, []);
 
-    setNotes(updatedNotes);
-    saveNotes(updatedNotes);
-  };
-
-  const getNoteById = (id: string): Note | undefined => {
+  const getNoteById = useCallback((id: string): Note | undefined => {
     return notes.find(note => note.id === id);
-  };
+  }, [notes]);
 
-  const value: NotesContextType = {
+  const value = useMemo(() => ({
     notes,
     addNote,
+    updateNote,
     deleteNote,
     toggleFavorite,
     getNoteById,
     isLoading,
-  };
+  }), [notes, addNote, updateNote, deleteNote, toggleFavorite, getNoteById, isLoading]);
 
   return (
     <NotesContext.Provider value={value}>{children}</NotesContext.Provider>
   );
 }
 
-export function useNotes(): NotesContextType {
+export function useNotes() {
   const context = useContext(NotesContext);
-
   if (!context) {
     throw new Error('useNotes must be used within a NotesProvider');
   }
-
   return context;
 }
 
@@ -108,8 +133,7 @@ function getDefaultNotes(): Note[] {
     {
       id: '1',
       title: 'Bem-vindo ao TaskNotes',
-      content:
-        'Este é seu aplicativo de notas. Crie, edite e organize suas anotações.',
+      content: 'Este é seu aplicativo de notas. Crie, edite e organize suas anotações.',
       createdAt: '2024-01-15T10:00:00.000Z',
       updatedAt: '2024-01-15T10:00:00.000Z',
       isFavorite: true,
@@ -118,8 +142,7 @@ function getDefaultNotes(): Note[] {
     {
       id: '2',
       title: 'Reunião de Sprint',
-      content:
-        'Discutir o backlog do próximo sprint e definir prioridades com o time.',
+      content: 'Discutir o backlog do próximo sprint e definir prioridades com o time.',
       createdAt: '2024-01-16T14:30:00.000Z',
       updatedAt: '2024-01-16T14:30:00.000Z',
       isFavorite: false,
@@ -128,8 +151,7 @@ function getDefaultNotes(): Note[] {
     {
       id: '3',
       title: 'Ideia de app',
-      content:
-        'Criar um app de receitas que sugere pratos com base nos ingredientes disponíveis.',
+      content: 'Criar um app de receitas que sugere pratos com base nos ingredientes disponíveis.',
       createdAt: '2024-01-17T09:15:00.000Z',
       updatedAt: '2024-01-17T09:15:00.000Z',
       isFavorite: true,
