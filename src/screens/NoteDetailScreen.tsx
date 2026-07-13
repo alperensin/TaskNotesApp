@@ -24,8 +24,6 @@ export function NoteDetailScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
 
   const note = getNoteById(noteId);
-
-  // Injeção do Hook Customizado de Edição integrado ao Contexto
   const {
     isEditing,
     editTitle,
@@ -41,7 +39,6 @@ export function NoteDetailScreen({ route, navigation }: Props) {
     updateNote(noteId, { title, content, category });
   });
 
-  // Garante o fallback de segurança se a nota deixar de existir
   useEffect(() => {
     if (!note) {
       navigation.goBack();
@@ -83,7 +80,6 @@ export function NoteDetailScreen({ route, navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {isEditing ? (
-          /* ================= MODO EDIÇÃO ================= */
           <View style={styles.formContainer}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Título</Text>
             <TextInput
@@ -236,7 +232,6 @@ const styles = StyleSheet.create({
   spacer: {
     height: 8,
   },
-  /* Novos Estilos do Formulário Flutuante de Edição */
   formContainer: {
     flex: 1,
   },
