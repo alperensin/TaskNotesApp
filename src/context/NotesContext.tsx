@@ -12,7 +12,6 @@ import { Note, NotesContextType, CreateNotePayload } from '../types';
 import { loadNotes, saveNotes as saveNotesToStorage } from '../services/storage';
 import { generateId } from '../utils/formatters';
 
-// Atualizando a tipagem local do contexto estendido para o teste
 interface ExtendedNotesContextType extends Omit<NotesContextType, 'updateNote'> {
   updateNote: (id: string, payload: Partial<CreateNotePayload>) => void;
 }
@@ -75,7 +74,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
           ? {
               ...note,
               ...payload,
-              updatedAt: new Date().toISOString(), // Atualiza obrigatoriamente a data de modificação
+              updatedAt: new Date().toISOString(),
             }
           : note
       );
@@ -109,7 +108,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
   const value = useMemo(() => ({
     notes,
     addNote,
-    updateNote, // Injetado no value do Provider
+    updateNote,
     deleteNote,
     toggleFavorite,
     getNoteById,
